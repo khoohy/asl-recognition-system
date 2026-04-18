@@ -131,6 +131,20 @@ This system is designed around three core principles:
 - Offline TTS (Windows SAPI) for low-latency output
 
 ---
+## Project Scope
+
+This system performs isolated sign recognition only (single sign at a time).
+Sentence-level ASL translation and grammar modeling are not included.
+
+---
+
+## Future Improvements
+Improve signer-independent generalization
+Add latency benchmarking for real-time evaluation
+Explore pose + hand fusion improvements
+ONNX / TensorRT deployment optimization
+
+---
 
 ## How to Run
 
@@ -141,14 +155,4 @@ Run training
 python scripts/train_model_300.py --device cuda
 Run real-time inference
 python src/main.py --model models/asl_model_300.pt --use-wlasl300
-Project Scope
-
-This system performs isolated sign recognition only (single sign at a time).
-Sentence-level ASL translation and grammar modeling are not included.
-
-Future Improvements
-Improve signer-independent generalization
-Add latency benchmarking for real-time evaluation
-Explore pose + hand fusion improvements
-ONNX / TensorRT deployment optimization
 
