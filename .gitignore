@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# Large ML stuff (IGNORE THESE)
+data/
+models/
+checkpoints/
+
+# Logs & outputs
+logs/
+reports/
+
+# System
+.DS_Store
