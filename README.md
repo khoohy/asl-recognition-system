@@ -1,3 +1,4 @@
+
 # Real-Time ASL Recognition System
 
 This project is a webcam-based American Sign Language recognition pipeline designed for standard consumer hardware. It targets isolated-sign recognition with a 300-sign WLASL vocabulary, on-screen text output, and text-to-speech.
@@ -123,3 +124,4 @@ If the goal is to align more closely with the proposal targets, the strongest ne
 ## Scope Reminder
 
 This project is currently an isolated-sign recognizer, not a full ASL grammar or sentence translator. That still fits the core project direction, but it should be stated clearly in reports and presentations.
+
