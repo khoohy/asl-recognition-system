@@ -10,10 +10,7 @@ This repository combines:
 - preprocessing shared between offline training and live deployment
 
 Demo video: 
-<p align="center">
-  <video src="https://github.com/user-attachments/assets/9807f81d-f893-447c-b9a1-706aef9c525b" width="100%" controls autoplay muted loop>
-  </video>
-</p>
+https://github.com/user-attachments/assets/9807f81d-f893-447c-b9a1-706aef9c525b
 
 
 
