@@ -8,13 +8,10 @@ This repository combines:
 - WLASL300 data preparation utilities
 - training and evaluation scripts
 - preprocessing shared between offline training and live deployment
+- optional text-to-speech output for predicted signs
 
 Demo video: 
 https://github.com/user-attachments/assets/9807f81d-f893-447c-b9a1-706aef9c525b
-
-
-
-- optional text-to-speech output for predicted signs
 
 ## Overview
 
