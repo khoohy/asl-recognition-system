@@ -354,11 +354,13 @@ class WLASLFeatureEngineering:
     @staticmethod
     def augment_feature_sequence(
         sequence: np.ndarray,
-        jitter_std: float = 0.01,
-        hand_dropout_prob: float = 0.2,
+        jitter_std: float = 0.02,
+        frame_hand_dropout_rate: float = 0.10,
+        one_hand_dropout_prob: float = 0.25,
         finger_scale_prob: float = 0.35,
-        temporal_dropout_prob: float = 0.6,
-        temporal_scale_prob: float = 0.5,
+        temporal_dropout_prob: float = 0.7,
+        temporal_scale_prob: float = 0.6,
+        temporal_skip_prob: float = 0.6,
     ) -> np.ndarray:
         """Apply advanced hand-aware augmentation to a normalized feature sequence."""
         seq = np.asarray(sequence, dtype=np.float32).copy()
@@ -380,13 +382,20 @@ class WLASLFeatureEngineering:
 
             # Finger-size variation to mimic different hand geometries.
             if np.random.random() < finger_scale_prob:
-                left = WLASLFeatureEngineering._apply_finger_bone_scaling(left)
-                right = WLASLFeatureEngineering._apply_finger_bone_scaling(right)
+                left = WLASLFeatureEngineering._apply_finger_bone_scaling(left, scale_range=(0.9, 1.1))
+                right = WLASLFeatureEngineering._apply_finger_bone_scaling(right, scale_range=(0.9, 1.1))
 
             seq[frame_idx] = WLASLFeatureEngineering._merge_hands_to_features(left, right, extra)
 
-        # Hand-specific dropout to force robustness for one-handed variants.
-        if seq.shape[1] >= WLASLFeatureEngineering.HAND_DIM and np.random.random() < hand_dropout_prob:
+        # Per-frame full hand occlusion forces the model to use face/pose anchors under brief loss.
+        if seq.shape[1] >= WLASLFeatureEngineering.HAND_DIM and frame_hand_dropout_rate > 0:
+            frame_drop_count = max(1, int(round(len(seq) * frame_hand_dropout_rate)))
+            frame_drop_count = min(frame_drop_count, len(seq))
+            drop_indices = np.random.choice(len(seq), size=frame_drop_count, replace=False)
+            seq[drop_indices, : WLASLFeatureEngineering.HAND_DIM] = 0.0
+
+        # Whole-hand dropout still helps one-handed and partial-occlusion robustness.
+        if seq.shape[1] >= WLASLFeatureEngineering.HAND_DIM and np.random.random() < one_hand_dropout_prob:
             if np.random.random() < 0.5:
                 seq[:, :63] = 0.0
             else:
@@ -397,6 +406,15 @@ class WLASLFeatureEngineering:
             drop_count = max(1, int(len(seq) * np.random.uniform(0.03, 0.08)))
             drop_indices = np.random.choice(len(seq), size=drop_count, replace=False)
             seq[drop_indices] = 0.0
+
+        # Random frame skipping simulates laggy or inconsistent webcam frame delivery.
+        if len(seq) > 8 and np.random.random() < temporal_skip_prob:
+            keep_mask = np.ones((len(seq),), dtype=bool)
+            skip_count = max(1, int(len(seq) * np.random.uniform(0.05, 0.12)))
+            skip_indices = np.random.choice(len(seq), size=skip_count, replace=False)
+            keep_mask[skip_indices] = False
+            if np.any(keep_mask):
+                seq = seq[keep_mask]
 
         if len(seq) > 5 and np.random.random() < temporal_scale_prob:
             seq = WLASLFeatureEngineering.resample_sequence(

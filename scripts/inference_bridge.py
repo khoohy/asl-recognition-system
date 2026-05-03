@@ -20,7 +20,7 @@ class InferenceBridge:
 
     def __init__(
         self,
-        model_path: str = "models/asl_model_300_bilstm512_pose_v1.pt",
+        model_path: str = "models/asl_model_300_pose_face_balaug_hardened_v1.pt",
         label_map_path: str = "data/raw/label_map_300.json",
         device: str = "cuda",
         sequence_length: int | None = None,
@@ -191,7 +191,7 @@ class RealtimeInferenceEngine:
 
     def __init__(
         self,
-        model_path: str = "models/asl_model_300_bilstm512_pose_v1.pt",
+        model_path: str = "models/asl_model_300_pose_face_balaug_hardened_v1.pt",
         label_map_path: str = "data/raw/label_map_300.json",
         device: str = "cuda",
         sequence_length: int | None = None,

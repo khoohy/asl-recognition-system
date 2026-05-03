@@ -2,7 +2,7 @@
 
 Project: Real-time ASL Recognition Pipeline  
 Maintained as a living document for code, training, and architecture updates.  
-Last updated: April 16, 2026
+Last updated: May 3, 2026
 
 ## How to use this document
 
@@ -27,6 +27,163 @@ The project is a webcam-based ASL recognition system that:
 The strongest measured WLASL300 validation direction found so far is the balanced-sampling plus augmentation path. From the saved histories in `models/`, the best validation Top-1 observed is `59.27%` and the best validation Top-5 observed is `84.48%`. The held-out test result recorded in the existing project documentation is lower, so the current gap is not just model capacity; it is also a generalization problem.
 
 ## Latest change log
+
+### 2026-05-03: Hardened checkpoint promoted to the full realtime default and live stabilization tuned
+
+What was done:
+- promoted the hardened face-aware checkpoint to the shared default model path in both `src/main.py` and `scripts/inference_bridge.py`
+- strengthened `scripts/prepare_data.py` augmentation with higher coordinate jitter, per-frame full-hand occlusion, separate one-hand dropout, and random frame skipping before final resampling
+- hardened `scripts/train_model_300.py` with CUDA AMP support, gradient scaling, DataLoader `num_workers` control, pinned CUDA host memory, and a configurable minimum learning-rate floor for plateau scheduling
+- moved realtime WLASL300 thresholds and heuristics into `src/utils/config.py`, including per-sign confidence overrides, motion requirements, confusion-pair suppression, and short peak-detection overrides
+- updated `src/main.py` so stabilization can accept adaptive lower-confidence winners, reject near-tied confusion pairs, and briefly preserve high-confidence peak signs even when the signer relaxes into a noisier end pose
+- expanded `src/modules/ui.py` from a fixed Top-3 panel to a dynamic Top-5 panel driven by `Config.DISPLAY_TOP_K`
+
+Why it was done:
+- the hardened checkpoint is now the intended live baseline, so the default runtime path should stop pointing at older models
+- the remaining deployment problem is not only raw accuracy; it is also webcam robustness under dropout, ambiguous near-ties, and brief confidence collapses after the strongest sign moment has already happened
+- the training path needed more realistic corruption and more conservative CUDA guardrails to support repeatable retrains on laptop-class hardware
+
+Files changed:
+- `scripts/inference_bridge.py`
+- `scripts/prepare_data.py`
+- `scripts/train_model_300.py`
+- `src/main.py`
+- `src/modules/ui.py`
+- `src/utils/config.py`
+- `docs/PROJECT_CHANGELOG_AND_COMPONENTS.md`
+- `docs/FULL_SYSTEM_TECHNICAL_ANATOMY.md`
+
+Expected effect:
+- all default WLASL300 entry points now resolve to `models/asl_model_300_pose_face_balaug_hardened_v1.pt`
+- live output should be less eager on confusing near-ties, less brittle on mid-sign confidence dips, and more willing to keep a correct short-lived peak sign visible
+- future retrains should better simulate webcam instability while using safer CUDA training defaults
+- the UI now exposes more of the model ranking context during debugging and demos
+
+### 2026-04-28: Reverted the latest MediaPipe hardening pass
+
+What was done:
+- reverted `src/modules/keypoint_extraction.py` from the recent stride-based and hand-hold MediaPipe path back to the simpler always-process-every-frame extractor
+- removed the separate realtime tracking-threshold wiring from `src/main.py`
+- restored the older MediaPipe confidence defaults in `src/utils/config.py`
+
+Why it was done:
+- the request was to undo the most recent MediaPipe-specific tuning and restore the earlier integration behavior without rolling back unrelated model, training, or UI work
+
+Files changed:
+- `src/modules/keypoint_extraction.py`
+- `src/main.py`
+- `src/utils/config.py`
+- `docs/PROJECT_CHANGELOG_AND_COMPONENTS.md`
+
+Expected effect:
+- the runtime now uses the earlier simpler MediaPipe processing path again
+- recent extractor caching, frame-stride reuse, and brief hand-landmark hold behavior are no longer active
+
+### 2026-04-28: Realtime MediaPipe extraction hardened for better landmark continuity
+
+What was done:
+- analyzed a simpler standalone MediaPipe hand-tracking loop against the project extractor and confirmed that the project path was doing significantly more work per frame
+- updated `src/modules/keypoint_extraction.py` so hand landmarks are still processed every frame, while pose and face mesh can be reused across short frame strides instead of always being recomputed on every frame
+- added a short hand-landmark hold path so brief one- or two-frame tracking dropouts do not immediately zero out the live hand signal in the middle of a sign
+- enabled the standard MediaPipe performance hint of marking the RGB frame as non-writeable during inference
+- updated `src/main.py` so the extractor now receives separate detection and tracking thresholds
+- lowered the default realtime MediaPipe thresholds in `src/utils/config.py` to make hand reacquisition less brittle during live signing
+
+Why it was done:
+- the simpler standalone demo felt more stable mainly because it only ran the hand tracker, while the project extractor was running hands, pose, and face mesh together every frame
+- that heavier workload can reduce effective realtime stability and make landmarks disappear more often during fast motion or partial occlusion
+- the stronger deployed models still need pose and face context, so the better fix was to keep those signals while making the extractor lighter and more tolerant
+
+Files changed:
+- `src/modules/keypoint_extraction.py`
+- `src/main.py`
+- `src/utils/config.py`
+- `docs/PROJECT_CHANGELOG_AND_COMPONENTS.md`
+
+Tools and libraries involved:
+- MediaPipe Hands, Pose, and Face Mesh
+- OpenCV for frame preprocessing
+- NumPy for cached landmark reuse
+
+Expected effect:
+- fewer mid-sign hand landmark disappearances in the webcam demo
+- smoother realtime landmark continuity without removing face-aware model support
+- better practical stability at the current camera resolution and overall pipeline structure
+
+### 2026-04-27: Hardened checkpoint promoted to live webcam default
+
+What was done:
+- updated `src/main.py` so the realtime `--use-wlasl300` path now defaults to `models/asl_model_300_pose_face_balaug_hardened_v1.pt`
+
+Why it was done:
+- the hardened face-aware run is now the strongest measured checkpoint on held-out Test Top-1, so the live testing path should use it by default instead of the older `60.03%` Test Top-1 model
+
+Files changed:
+- `src/main.py`
+- `docs/PROJECT_CHANGELOG_AND_COMPONENTS.md`
+
+Expected effect:
+- live webcam testing now uses the highest-performing available face-aware checkpoint without needing a manual model-path override
+
+### 2026-04-27: Hardened face-aware run completed and reached 65% Test Top-1
+
+What was done:
+- ran a full `50`-epoch hardened retrain as `models/asl_model_300_pose_face_balaug_hardened_v1.pt`
+- used the strengthened augmentation path plus the new trainer guardrails:
+  - `--source mp-cache`
+  - `--use-pose`
+  - `--use-face`
+  - `--class-balanced`
+  - `--augment`
+  - default AMP enabled on CUDA
+  - batch size `32`
+  - DataLoader `num_workers=0`
+- saved the run report as `models/asl_model_300_pose_face_balaug_hardened_v1_report.json`
+
+Why it was done:
+- the previous face-aware run was stuck at `60.03%` Test Top-1, so the hardened training pass needed to be validated with a real end-to-end retrain rather than just documented as a plan
+- this run tested whether stronger robustness augmentation and conservative GPU guardrails could close the validation-to-test gap without changing the core architecture
+
+Files changed:
+- `models/asl_model_300_pose_face_balaug_hardened_v1.pt`
+- `models/asl_model_300_pose_face_balaug_hardened_v1_report.json`
+- `docs/PROJECT_CHANGELOG_AND_COMPONENTS.md`
+- `docs/FULL_SYSTEM_TECHNICAL_ANATOMY.md`
+
+Measured effect:
+- best validation Top-1 improved to `72.31%`
+- best validation Top-5 improved to `89.33%`
+- test Top-1 improved to `65.01%`
+- test Top-5 improved to `87.59%`
+- this means the hardened run cleared the `65%` Test Top-1 target, but still fell slightly short of the `88%` Test Top-5 target
+- the validation-to-test gap narrowed from about `7.42` points in the earlier face-aware run to about `7.30` points here, so the improvement is real but the generalization problem is not fully solved
+- the saved checkpoint exists, but it has not yet been promoted to the live webcam default model path
+### 2026-04-27: Training hardening pass for robustness, AMP, and stability guardrails
+
+What was done:
+- strengthened `scripts/prepare_data.py` augmentation with heavier coordinate jitter, per-frame hand occlusion, stronger finger scaling, temporal dropout, and random frame skipping before final resampling
+- updated `scripts/train_model_300.py` so the trainer now supports CUDA mixed precision with gradient scaling
+- added an explicit `1e-5` minimum learning-rate floor to the `ReduceLROnPlateau` branch
+- exposed `--amp`, `--no-amp`, `--min-lr`, and `--num-workers` in the training CLI
+- kept the stability-oriented defaults aligned with the current optimization plan: `50` epochs, batch size `32`, and DataLoader `num_workers=0`
+- refreshed `docs/FULL_SYSTEM_TECHNICAL_ANATOMY.md` so the system deep-dive reflects the new robustness and hardware-stability strategy
+
+Why it was done:
+- the current bottleneck is the validation-to-test generalization gap rather than a simple lack of model depth
+- the live deployment environment is noisier than the clean training distribution, so the training data needs to simulate occlusion, shaky capture, frame skipping, and signer variability more aggressively
+- laptop-class RTX training benefits from lower VRAM pressure and fewer multiprocessing edge cases, so AMP plus conservative loader settings are practical guardrails against watchdog-style instability
+
+Files changed:
+- `scripts/prepare_data.py`
+- `scripts/train_model_300.py`
+- `docs/FULL_SYSTEM_TECHNICAL_ANATOMY.md`
+- `docs/PROJECT_CHANGELOG_AND_COMPONENTS.md`
+
+Expected effect:
+- stronger robustness to occlusion, unstable tracking, and irregular webcam cadence
+- lower VRAM pressure during CUDA training
+- a better chance of closing the test-set gap without adding unnecessary architectural complexity
+- clearer documentation of which optimization moves are implemented versus which accuracy targets are still aspirational
 
 ### 2026-04-16: Production-only system anatomy document added
 
@@ -550,6 +707,7 @@ How it is used:
 - trims invalid sequence edges
 - interpolates short gaps
 - resamples all sequences to a fixed frame length
+- applies robustness augmentation including jitter, hand occlusion, one-hand dropout, temporal dropout, and frame skipping
 
 How this project uses it:
 - this file is one of the most important consistency points in the repo because it defines the exact training distribution the live system tries to match
@@ -563,7 +721,7 @@ How it is used:
 - loads one of several dataset backends
 - creates the BiLSTM + attention model
 - trains with Top-1 and Top-5 tracking
-- supports class-balanced sampling, augmentation, weighted loss, warmup, optional pose features, optional face features, and optional focal loss
+- supports class-balanced sampling, augmentation, weighted loss, warmup, optional pose features, optional face features, optional focal loss, CUDA AMP, configurable DataLoader workers, and a minimum learning-rate floor
 - saves checkpoints, history, and experiment reports
 
 How this project uses it:
@@ -579,6 +737,7 @@ How it is used:
 - rebuilds the model with the right input dimension
 - applies the same preprocessing logic used in training
 - returns Top-5 predictions for the live UI using the same saved hand/pose/face feature settings as training
+- now defaults to the hardened face-aware checkpoint when no custom model path is supplied
 
 How this project uses it:
 - as the production-oriented inference layer for the stronger 300-sign path
@@ -602,7 +761,7 @@ What it is:
 
 How it is used:
 - draws the live frame
-- overlays predicted signs, confidence, top-k guesses, FPS, and system status
+- overlays predicted signs, confidence, a dynamic Top-K guess list, FPS, and system status
 
 How this project uses it:
 - to make the realtime demo understandable during testing, reporting, and presentation
@@ -625,10 +784,10 @@ What it is:
 - central project configuration
 
 How it is used:
-- stores capture settings, model defaults, directory paths, and runtime toggles
+- stores capture settings, model defaults, directory paths, runtime toggles, and the live WLASL300 stabilization heuristics
 
 How this project uses it:
-- to keep the demo path configurable without scattering constants across the codebase
+- to keep the demo path configurable without scattering constants across the codebase, including per-sign realtime gating behavior
 
 ### `data/raw/wlasl_v0.3.json`
 
@@ -679,7 +838,7 @@ How this project uses it:
 
 ## Important observations about the current system
 
-- The active deployed representation can now be face-aware, but that path still needs retraining and validation before it becomes the strongest default model.
+- The active deployed representation is now face-aware and the hardened checkpoint is the shared default live model path.
 - `I` and `ME` exist in the full WLASL metadata but are not part of the default top-300 frequency-selected vocabulary.
 - The best validation result and the reported test result are meaningfully different, so the next gains should focus on generalization.
 - Balanced sampling plus augmentation already looks like the right baseline direction.

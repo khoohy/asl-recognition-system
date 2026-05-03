@@ -36,10 +36,10 @@ class ASLRecognitionPipeline:
     Handles real-time capture, processing, inference, and output.
     """
     
-    WLASL300_DEFAULT_MODEL = "models/asl_model_300_pose_face_balaug_v1.pt"
-    STABILIZATION_WINDOW = 10
-    STABILIZATION_MIN_COUNT = 6
-    CONFIDENCE_SQUELCH = 0.65
+    WLASL300_DEFAULT_MODEL = "models/asl_model_300_pose_face_balaug_hardened_v1.pt"
+    STABILIZATION_WINDOW = Config.REALTIME_STABILIZATION_WINDOW
+    STABILIZATION_MIN_COUNT = Config.REALTIME_STABILIZATION_MIN_COUNT
+    CONFIDENCE_SQUELCH = Config.REALTIME_BASE_CONFIDENCE_SQUELCH
     HAND_MISSING_GRACE_FRAMES = 10
 
     def __init__(self, model_checkpoint: Optional[str] = None, use_wlasl300: bool = False):
@@ -114,10 +114,12 @@ class ASLRecognitionPipeline:
         self.last_prediction_time = 0
         self.prediction_cooldown = 0.0 if self.use_wlasl300 else 0.5
         self.prediction_history = deque(maxlen=self.STABILIZATION_WINDOW)
+        self.peak_prediction_history = deque(maxlen=Config.REALTIME_PEAK_HISTORY_WINDOW)
         self.latest_top_k: List[Tuple[str, float]] = []
         self.last_spoken_prediction: Optional[str] = None
         self.current_display_text = "..."
         self.hand_missing_grace_remaining = self.HAND_MISSING_GRACE_FRAMES
+        self.last_motion_delta = 0.0
         
         print("Pipeline initialized successfully!")
 
@@ -133,18 +135,26 @@ class ASLRecognitionPipeline:
     def _update_stabilized_prediction(
         self,
         top_predictions: Optional[List[Tuple[str, float]]],
+        motion_delta: float = 0.0,
     ) -> Tuple[str, float, List[Tuple[str, float]]]:
         if not top_predictions:
             self.latest_top_k = []
             self.prediction_history.append(None)
+            self.peak_prediction_history.append(None)
             self.current_display_text = "..."
             return ("...", 0.0, [])
 
-        self.latest_top_k = top_predictions[:3]
+        self.latest_top_k = top_predictions[: Config.DISPLAY_TOP_K]
         top_sign, top_confidence = top_predictions[0]
-        candidate = top_sign if top_confidence >= self.CONFIDENCE_SQUELCH else None
+        candidate = top_sign if self._should_accept_candidate(top_predictions, motion_delta) else None
         self.prediction_history.append(candidate)
+        peak_candidate = top_sign if self._is_peak_candidate(top_predictions, motion_delta) else None
+        self.peak_prediction_history.append(peak_candidate)
         if candidate is None:
+            peak_sign = self._get_peak_stabilized_sign()
+            if peak_sign is not None:
+                self.current_display_text = peak_sign
+                return (peak_sign, top_confidence, self.latest_top_k)
             self.current_display_text = "..."
             return ("...", top_confidence, self.latest_top_k)
 
@@ -155,6 +165,10 @@ class ASLRecognitionPipeline:
             stabilized_sign, stabilized_count = counts.most_common(1)[0]
 
         if stabilized_count < self.STABILIZATION_MIN_COUNT:
+            peak_sign = self._get_peak_stabilized_sign()
+            if peak_sign is not None:
+                self.current_display_text = peak_sign
+                return (peak_sign, top_confidence, self.latest_top_k)
             self.current_display_text = "..."
             return ("...", top_confidence, self.latest_top_k)
 
@@ -165,6 +179,80 @@ class ASLRecognitionPipeline:
                 stabilized_confidence = confidence
                 break
         return (stabilized_sign, stabilized_confidence, self.latest_top_k)
+
+    def _should_accept_candidate(
+        self,
+        top_predictions: List[Tuple[str, float]],
+        motion_delta: float,
+    ) -> bool:
+        if not top_predictions:
+            return False
+
+        top_sign, top_confidence = top_predictions[0]
+        runner_up_confidence = top_predictions[1][1] if len(top_predictions) > 1 else 0.0
+        confidence_margin = top_confidence - runner_up_confidence
+
+        min_confidence = Config.REALTIME_SIGN_CONFIDENCE_OVERRIDES.get(
+            top_sign,
+            self.CONFIDENCE_SQUELCH,
+        )
+        adaptive_floor = max(
+            Config.REALTIME_ADAPTIVE_CONFIDENCE_FLOOR,
+            min_confidence - 0.10,
+        )
+
+        required_motion = Config.REALTIME_SIGN_MOTION_REQUIREMENTS.get(top_sign)
+        if required_motion is not None and motion_delta < required_motion:
+            return False
+
+        rivals = Config.REALTIME_CONFUSION_PAIRS.get(top_sign, set())
+        if rivals:
+            for rival_sign, rival_confidence in top_predictions[1:]:
+                if rival_sign in rivals and (top_confidence - rival_confidence) < 0.08:
+                    return False
+
+        if top_confidence >= min_confidence:
+            return True
+
+        return top_confidence >= adaptive_floor and confidence_margin >= Config.REALTIME_ADAPTIVE_MARGIN
+
+    def _is_peak_candidate(
+        self,
+        top_predictions: List[Tuple[str, float]],
+        motion_delta: float,
+    ) -> bool:
+        if not top_predictions:
+            return False
+
+        top_sign, top_confidence = top_predictions[0]
+        peak_threshold = Config.REALTIME_PEAK_SIGN_CONFIDENCE_OVERRIDES.get(top_sign)
+        if peak_threshold is None or top_confidence < peak_threshold:
+            return False
+
+        runner_up_confidence = top_predictions[1][1] if len(top_predictions) > 1 else 0.0
+        if (top_confidence - runner_up_confidence) < Config.REALTIME_PEAK_MARGIN:
+            return False
+
+        required_motion = Config.REALTIME_SIGN_MOTION_REQUIREMENTS.get(top_sign)
+        if required_motion is not None and motion_delta < required_motion:
+            return False
+
+        rivals = Config.REALTIME_CONFUSION_PAIRS.get(top_sign, set())
+        for rival_sign, rival_confidence in top_predictions[1:]:
+            if rival_sign in rivals and (top_confidence - rival_confidence) < 0.08:
+                return False
+
+        return True
+
+    def _get_peak_stabilized_sign(self) -> Optional[str]:
+        counts = Counter(sign for sign in self.peak_prediction_history if sign)
+        if not counts:
+            return None
+
+        peak_sign, peak_count = counts.most_common(1)[0]
+        if peak_count >= Config.REALTIME_PEAK_MIN_COUNT:
+            return peak_sign
+        return None
 
     def _handle_tts_transition(self, prediction_text: str) -> None:
         if not Config.ENABLE_TTS:
@@ -180,11 +268,13 @@ class ASLRecognitionPipeline:
     def _reset_realtime_prediction_state(self) -> Tuple[str, float, List[Tuple[str, float]]]:
         """Clear cached buffers/predictions so idle frames do not hallucinate signs."""
         self.prediction_history.clear()
+        self.peak_prediction_history.clear()
         self.latest_top_k = []
         self.current_display_text = "..."
         self.last_prediction = ("...", 0.0, [])
         self.last_prediction_time = 0.0
         self.hand_missing_grace_remaining = self.HAND_MISSING_GRACE_FRAMES
+        self.last_motion_delta = 0.0
         if self.use_wlasl300 and self.inference_engine is not None:
             self.inference_engine.reset()
         else:
@@ -259,12 +349,16 @@ class ASLRecognitionPipeline:
         # WLASL300 path: use inference engine directly with raw keypoints
         if self.use_wlasl300 and self.inference_engine is not None:
             if keypoints is None:
-                stabilized_prediction = self._update_stabilized_prediction(None)
+                stabilized_prediction = self._update_stabilized_prediction(None, motion_delta=0.0)
                 self.last_prediction = stabilized_prediction
                 return stabilized_prediction
             try:
                 top5_predictions = self.inference_engine.process_frame(keypoints)
-                stabilized_prediction = self._update_stabilized_prediction(top5_predictions)
+                self.last_motion_delta = self.inference_engine.last_motion_delta
+                stabilized_prediction = self._update_stabilized_prediction(
+                    top5_predictions,
+                    motion_delta=self.last_motion_delta,
+                )
                 self.last_prediction = stabilized_prediction
                 self.last_prediction_time = time.time()
                 self._handle_tts_transition(stabilized_prediction[0])

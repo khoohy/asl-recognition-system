@@ -16,6 +16,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 from tqdm import tqdm
 
@@ -540,6 +541,8 @@ class ModelTrainer:
         dropout: float = 0.5,
         focal_gamma: float = 0.0,
         scheduler_name: str = "plateau",
+        min_learning_rate: float = 1e-5,
+        use_amp: bool = True,
     ):
         self.model = model.to(device)
         self.device = device
@@ -563,6 +566,9 @@ class ModelTrainer:
         self.dropout = dropout
         self.focal_gamma = focal_gamma
         self.scheduler_name = scheduler_name
+        self.min_learning_rate = max(0.0, float(min_learning_rate))
+        self.use_amp = bool(use_amp and device.type == "cuda")
+        self.scaler = GradScaler(enabled=self.use_amp)
 
     @staticmethod
     def compute_topk(logits: torch.Tensor, labels: torch.Tensor, k: int) -> float:
@@ -579,19 +585,27 @@ class ModelTrainer:
 
         progress = tqdm(loader, desc="Train" if training else "Eval")
         for features, labels in progress:
-            features = features.to(self.device)
-            labels = labels.to(self.device)
+            features = features.to(self.device, non_blocking=self.device.type == "cuda")
+            labels = labels.to(self.device, non_blocking=self.device.type == "cuda")
 
             if training:
                 self.optimizer.zero_grad()
 
-            logits = self.model(features)
-            loss = self.criterion(logits, labels)
+            with autocast(enabled=self.use_amp):
+                logits = self.model(features)
+                loss = self.criterion(logits, labels)
 
             if training:
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
-                self.optimizer.step()
+                if self.use_amp:
+                    self.scaler.scale(loss).backward()
+                    self.scaler.unscale_(self.optimizer)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+                    self.optimizer.step()
                 if self.scheduler_name == "onecycle" and self.scheduler is not None:
                     self.scheduler.step()
 
@@ -623,6 +637,7 @@ class ModelTrainer:
                 "hidden_dim": self.hidden_dim,
                 "dropout": self.dropout,
                 "focal_gamma": self.focal_gamma,
+                "amp_enabled": self.use_amp,
                 "num_heads": getattr(self.model, "num_heads", 1),
                 "use_motion_delta": getattr(self.model, "use_motion_delta", False),
                 "num_classes": len(index_to_gloss),
@@ -655,7 +670,13 @@ class ModelTrainer:
                 final_div_factor=100.0,
             )
         else:
-            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode="max", factor=0.5, patience=3)
+            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer,
+                mode="max",
+                factor=0.5,
+                patience=3,
+                min_lr=self.min_learning_rate,
+            )
 
         for epoch in range(1, epochs + 1):
             if self.scheduler_name != "onecycle" and self.warmup_epochs > 0 and epoch <= self.warmup_epochs:
@@ -791,12 +812,15 @@ def save_experiment_report(
             "epochs_completed": len(trainer.history),
             "batch_size": args.batch_size,
             "learning_rate": args.learning_rate,
+            "min_learning_rate": args.min_lr,
             "warmup_epochs": args.warmup_epochs,
             "scheduler": args.scheduler,
             "augment": bool(args.augment),
             "class_balanced": bool(args.class_balanced),
             "weighted_loss": bool(args.weighted_loss),
             "focal_gamma": args.focal_gamma,
+            "amp_enabled": bool(trainer.use_amp),
+            "num_workers": args.num_workers,
             "boost_glosses": parse_gloss_list(args.boost_glosses),
             "boost_factor": args.boost_factor,
             "seed": args.seed,
@@ -826,12 +850,17 @@ def main() -> None:
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
+    parser.add_argument("--min-lr", type=float, default=1e-5)
     parser.add_argument("--sequence-length", type=int, default=30)
     parser.add_argument("--hidden-dim", type=int, default=512)
     parser.add_argument("--dropout", type=float, default=0.5)
     parser.add_argument("--num-heads", type=int, default=1)
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cuda")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--amp", dest="amp", action="store_true")
+    parser.add_argument("--no-amp", dest="amp", action="store_false")
+    parser.set_defaults(amp=True)
     parser.add_argument("--eval-only", action="store_true")
     parser.add_argument("--checkpoint", default="models/asl_model_300.pt")
     parser.add_argument("--output-prefix", default="models/asl_model_300")
@@ -972,10 +1001,23 @@ def main() -> None:
         batch_size=args.batch_size,
         shuffle=train_shuffle,
         sampler=train_sampler,
-        num_workers=0,
+        num_workers=args.num_workers,
+        pin_memory=device.type == "cuda",
     )
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0)
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        pin_memory=device.type == "cuda",
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        pin_memory=device.type == "cuda",
+    )
 
     input_dim = getattr(train_dataset, "input_dim", 126)
     model = BiLSTMSignClassifier(
@@ -1033,6 +1075,8 @@ def main() -> None:
         dropout=args.dropout,
         focal_gamma=args.focal_gamma,
         scheduler_name=args.scheduler,
+        min_learning_rate=args.min_lr,
+        use_amp=args.amp,
     )
     trainer.train(train_loader, val_loader, index_to_gloss=index_to_gloss, epochs=args.epochs)
 

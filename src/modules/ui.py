@@ -120,7 +120,8 @@ class RealtimeUI:
         h, w = frame.shape[:2]
         
         # Draw semi-transparent background panel for predictions
-        panel_height = 140
+        top_k_count = max(0, len(top_k[:5]))
+        panel_height = 120 + (top_k_count * 34)
         overlay = frame.copy()
         cv2.rectangle(overlay, (10, 10), (w - 10, panel_height + 80), (0, 0, 0), -1)
         frame = cv2.addWeighted(overlay, 0.7, frame, 0.3, 0)
@@ -133,15 +134,24 @@ class RealtimeUI:
         cv2.putText(frame, main_text, (20, 40), self.font, self.font_scale + 0.2, main_color, 2)
         cv2.putText(frame, conf_text, (20, 70), self.font, self.font_scale, self.font_color, self.font_thickness)
         
-        # Draw top-3 confidence bars.
+        # Draw top-k confidence bars.
         if top_k:
             topk_y = 102
-            cv2.putText(frame, "Top 3 guesses", (20, topk_y), self.font, 0.5, (220, 220, 220), 1)
+            visible_top_k = top_k[:5]
+            cv2.putText(
+                frame,
+                f"Top {len(visible_top_k)} guesses",
+                (20, topk_y),
+                self.font,
+                0.5,
+                (220, 220, 220),
+                1,
+            )
 
             bar_left = 20
             bar_right = min(w - 30, 250)
             bar_width = max(80, bar_right - bar_left)
-            for idx, (sign, score) in enumerate(top_k[:3]):
+            for idx, (sign, score) in enumerate(visible_top_k):
                 row_y = topk_y + 18 + (idx * 34)
                 text = f"{idx + 1}. {sign}"
                 cv2.putText(frame, text, (bar_left, row_y), self.font, 0.45, (210, 210, 210), 1)
