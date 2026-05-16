@@ -10,8 +10,7 @@ This repository combines:
 - preprocessing shared between offline training and live deployment
 - optional text-to-speech output for predicted signs
 
-Demo video:  
-https://github.com/user-attachments/assets/9807f81d-f893-447c-b9a1-706aef9c525b
+Demo video: [GitHub-hosted preview](https://github.com/user-attachments/assets/9807f81d-f893-447c-b9a1-706aef9c525b)
 
 ## Overview
 
@@ -85,8 +84,8 @@ This makes the model more useful for signs where hand shape alone is not enough.
 
 - The working webcam inference path is preserved and still runs through `src/main.py`
 - Production model artifacts are separated under `models/production/`
-- Older checkpoints and experiment outputs are archived under `models/archive/`
-- `backend/` and `frontend/` are placeholders for future FastAPI and React expansion, not implemented services yet
+- Older experiments and historical model outputs are archived under `models/archive/`
+- `backend/` and `frontend/` are placeholders for future FastAPI and React expansion
 
 Compatibility wrappers intentionally still exist in:
 
