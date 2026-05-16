@@ -1,0 +1,6 @@
+﻿"Run","Main change","Val Top-1","Val Top-5","Test Top-1","Test Top-5"
+"`asl_model_300_bilstm512_plateau_v1`","Hand-only high-capacity baseline","60.67%","not recorded here","57.50%","83.57%"
+"`asl_model_300_bilstm512_pose_v1`","Added selected pose joints","68.00%","not recorded here","63.03%","84.59%"
+"`asl_model_300_bilstm512_pose_seq40_targeted_v1`","Longer 40-frame pose window","68.10%","88.47%","61.82%","85.80%"
+"`asl_model_300_pose_face_balaug_v1`","Added compact face anchors and stronger augmentation","67.46%","88.90%","60.03%","85.80%"
+"`asl_model_300_pose_face_balaug_hardened_v1`","Hardened face-aware final run","72.31%","89.33%","65.01%","87.59%"

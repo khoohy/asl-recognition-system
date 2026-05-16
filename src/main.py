@@ -14,13 +14,13 @@ from typing import Optional, List, Tuple
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.modules.video_capture import VideoCapture
-from src.modules.keypoint_extraction import KeypointExtractor
-from src.modules.sequence_model import SignClassificationPipeline
-from src.modules.text_to_speech import TextToSpeechEngine
-from src.modules.ui import RealtimeUI
+from src.video.video_capture import VideoCapture
+from src.preprocessing.keypoint_extraction import KeypointExtractor
+from src.inference.sequence_model import SignClassificationPipeline
+from src.audio.text_to_speech import TextToSpeechEngine
+from src.video.ui import RealtimeUI
 from src.utils.config import Config
-from src.utils.preprocessing import KeypointPreprocessor
+from src.preprocessing.preprocessing import KeypointPreprocessor
 
 # Import new 300-sign inference engine (WLASL300 production)
 try:
@@ -36,7 +36,11 @@ class ASLRecognitionPipeline:
     Handles real-time capture, processing, inference, and output.
     """
     
-    WLASL300_DEFAULT_MODEL = "models/asl_model_300_pose_face_balaug_hardened_v1.pt"
+    WLASL300_DEFAULT_MODEL = "models/production/asl_wlasl300_realtime.pt"
+    WLASL300_LEGACY_MODEL_NAMES = {
+        "asl_model_300_pose_face_balaug_hardened_v1.pt",
+        "asl_wlasl300_realtime.pt",
+    }
     STABILIZATION_WINDOW = Config.REALTIME_STABILIZATION_WINDOW
     STABILIZATION_MIN_COUNT = Config.REALTIME_STABILIZATION_MIN_COUNT
     CONFIDENCE_SQUELCH = Config.REALTIME_BASE_CONFIDENCE_SQUELCH
@@ -129,6 +133,8 @@ class ASLRecognitionPipeline:
 
         checkpoint_name = Path(model_checkpoint).name.lower()
         if checkpoint_name == "bilstm_final.pt":
+            return self.WLASL300_DEFAULT_MODEL
+        if checkpoint_name in self.WLASL300_LEGACY_MODEL_NAMES:
             return self.WLASL300_DEFAULT_MODEL
         return model_checkpoint
 

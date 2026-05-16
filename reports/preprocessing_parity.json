@@ -1,0 +1,9 @@
+{
+  "wlasl_runtime_matches_training": true,
+  "max_abs_diff_wlasl_runtime_vs_training": 0.0,
+  "max_abs_diff_legacy_main_vs_training": 1.2382903099060059,
+  "notes": [
+    "WLASL300 runtime parity should be exact because inference uses the same shared feature-engineering function.",
+    "The legacy main.py preprocessing path intentionally differs and should not be used to claim WLASL300 training parity."
+  ]
+}

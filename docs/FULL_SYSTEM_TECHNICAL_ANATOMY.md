@@ -6,10 +6,11 @@ Scope: Only the current WLASL300 webcam pipeline and the training path that supp
 
 ## Ground truth before reading
 
-- The latest hardened face-aware checkpoint on disk is `models/asl_model_300_pose_face_balaug_hardened_v1.pt`.
+- The promoted production checkpoint now lives at `models/production/asl_wlasl300_realtime.pt`.
+- The older filename `models/asl_model_300_pose_face_balaug_hardened_v1.pt` was migrated during the repo refactor and now resolves through the production path instead of staying at the models root.
 - That checkpoint is still a `30 x 180` model.
 - The hardened run has now reached `65.01%` Test Top-1 and `87.59%` Test Top-5.
-- The hardened checkpoint is now the default live webcam model path in both `src/main.py` and `scripts/inference_bridge.py`.
+- The production checkpoint is now the default live webcam model path in both `src/main.py` and `scripts/evaluation/inference_bridge.py`.
 - The runtime still keeps motion as diagnostic context, but it no longer blanks a visible-hand paused sign just because motion is temporarily low.
 
 ## 1. The 180D Multi-Modal Feature Vector

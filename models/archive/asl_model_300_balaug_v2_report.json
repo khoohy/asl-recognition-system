@@ -1,0 +1,49 @@
+{
+  "best_checkpoint": "models/asl_model_300_balaug_v2.pt",
+  "dataset": {
+    "source": "mp-cache",
+    "metadata": "data/raw/wlasl_v0.3.json",
+    "label_map": "data/raw/label_map_300.json",
+    "train_samples": 3549,
+    "val_samples": 900,
+    "test_samples": 668,
+    "mp_root": "data/raw/data/mp"
+  },
+  "model": {
+    "input_dim": 126,
+    "hidden_dim": 256,
+    "dropout": 0.3,
+    "sequence_length": 30,
+    "num_classes": 300,
+    "use_pose": false
+  },
+  "training": {
+    "epochs_requested": 30,
+    "epochs_completed": 30,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "warmup_epochs": 3,
+    "augment": true,
+    "class_balanced": true,
+    "weighted_loss": false,
+    "focal_gamma": 0.0,
+    "seed": 42,
+    "device": "cuda"
+  },
+  "best_validation": {
+    "epoch": 26,
+    "train_loss": 1.8387686551154196,
+    "train_top1": 79.74332087748759,
+    "train_top5": 92.76172722782101,
+    "val_loss": 2.4959635200171637,
+    "val_top1": 58.94396551724138,
+    "val_top5": 82.32758620689656,
+    "lr": 0.0005
+  },
+  "test_metrics": {
+    "loss": 2.7416697343190513,
+    "top1": 52.019558066413516,
+    "top5": 81.03741520927066
+  },
+  "history_file": "models\\asl_model_300_balaug_v2_history.json"
+}

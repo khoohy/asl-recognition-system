@@ -1,0 +1,79 @@
+{
+  "best_checkpoint": "models/asl_model_300_pose_face_balaug_hardened_v1.pt",
+  "dataset": {
+    "source": "mp-cache",
+    "metadata": "data/raw/wlasl_v0.3.json",
+    "label_map": "data/raw/label_map_300.json",
+    "train_samples": 3549,
+    "val_samples": 900,
+    "test_samples": 668,
+    "mp_root": "data/raw/data/mp"
+  },
+  "model": {
+    "input_dim": 180,
+    "hidden_dim": 512,
+    "dropout": 0.5,
+    "num_heads": 1,
+    "sequence_length": 30,
+    "num_classes": 300,
+    "use_pose": true,
+    "use_face": true,
+    "pose_joints": [
+      0,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "face_landmarks": [
+      10,
+      151,
+      168,
+      1,
+      2,
+      13,
+      14,
+      17,
+      152,
+      33,
+      263
+    ]
+  },
+  "training": {
+    "epochs_requested": 50,
+    "epochs_completed": 50,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "min_learning_rate": 1e-05,
+    "warmup_epochs": 3,
+    "scheduler": "plateau",
+    "augment": true,
+    "class_balanced": true,
+    "weighted_loss": false,
+    "focal_gamma": 0.0,
+    "amp_enabled": true,
+    "num_workers": 0,
+    "boost_glosses": [],
+    "boost_factor": 1.0,
+    "seed": 42,
+    "device": "cuda"
+  },
+  "best_validation": {
+    "epoch": 48,
+    "train_loss": 1.2287938627036843,
+    "train_top1": 95.15474524583902,
+    "train_top5": 98.05743243243244,
+    "val_loss": 2.049375920460142,
+    "val_top1": 72.30603448275862,
+    "val_top5": 89.33189655172414,
+    "lr": 0.00025
+  },
+  "test_metrics": {
+    "loss": 2.2607846430369785,
+    "top1": 65.0085034824553,
+    "top5": 87.58503425688971
+  },
+  "history_file": "models\\asl_model_300_pose_face_balaug_hardened_v1_history.json"
+}

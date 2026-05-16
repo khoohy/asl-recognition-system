@@ -26,12 +26,16 @@ The project is a webcam-based ASL recognition system that:
 
 The strongest measured WLASL300 validation direction found so far is the balanced-sampling plus augmentation path. From the saved histories in `models/`, the best validation Top-1 observed is `59.27%` and the best validation Top-5 observed is `84.48%`. The held-out test result recorded in the existing project documentation is lower, so the current gap is not just model capacity; it is also a generalization problem.
 
+Repository note:
+- the old promoted checkpoint filename `models/asl_model_300_pose_face_balaug_hardened_v1.pt` was migrated during repo cleanup to `models/production/asl_wlasl300_realtime.pt`
+- compatibility wrappers still exist in `scripts/inference_bridge.py`, `src/modules/`, and `src/utils/preprocessing.py` so the refactor does not break the current working path
+
 ## Latest change log
 
 ### 2026-05-03: Hardened checkpoint promoted to the full realtime default and live stabilization tuned
 
 What was done:
-- promoted the hardened face-aware checkpoint to the shared default model path in both `src/main.py` and `scripts/inference_bridge.py`
+- promoted the hardened face-aware checkpoint to the shared default model path in both `src/main.py` and the realtime inference bridge
 - strengthened `scripts/prepare_data.py` augmentation with higher coordinate jitter, per-frame full-hand occlusion, separate one-hand dropout, and random frame skipping before final resampling
 - hardened `scripts/train_model_300.py` with CUDA AMP support, gradient scaling, DataLoader `num_workers` control, pinned CUDA host memory, and a configurable minimum learning-rate floor for plateau scheduling
 - moved realtime WLASL300 thresholds and heuristics into `src/utils/config.py`, including per-sign confidence overrides, motion requirements, confusion-pair suppression, and short peak-detection overrides
@@ -54,7 +58,7 @@ Files changed:
 - `docs/FULL_SYSTEM_TECHNICAL_ANATOMY.md`
 
 Expected effect:
-- all default WLASL300 entry points now resolve to `models/asl_model_300_pose_face_balaug_hardened_v1.pt`
+- all default WLASL300 entry points now resolve to `models/production/asl_wlasl300_realtime.pt`
 - live output should be less eager on confusing near-ties, less brittle on mid-sign confidence dips, and more willing to keep a correct short-lived peak sign visible
 - future retrains should better simulate webcam instability while using safer CUDA training defaults
 - the UI now exposes more of the model ranking context during debugging and demos

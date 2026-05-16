@@ -1,0 +1,222 @@
+[
+  {
+    "true_gloss": "BEFORE",
+    "predicted_gloss": "ROOM",
+    "count": 2,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.5094,
+    "motion_distance": 0.843,
+    "temporal_distance": 8.9171,
+    "duration_gap": 0.9167,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "DOCTOR",
+    "predicted_gloss": "CENTER",
+    "count": 2,
+    "category": "Temporal Confusion",
+    "shape_distance": 3.2994,
+    "motion_distance": 0.5307,
+    "temporal_distance": 12.4496,
+    "duration_gap": 19.3333,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "BUT",
+    "predicted_gloss": "DIFFERENT",
+    "count": 2,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.2642,
+    "motion_distance": 0.3419,
+    "temporal_distance": 5.4216,
+    "duration_gap": 4.0,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "DIFFERENT",
+    "predicted_gloss": "BUT",
+    "count": 2,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.2642,
+    "motion_distance": 0.3419,
+    "temporal_distance": 5.4216,
+    "duration_gap": 4.0,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "BLANKET",
+    "predicted_gloss": "BALANCE",
+    "count": 2,
+    "category": "Temporal Confusion",
+    "shape_distance": 4.2601,
+    "motion_distance": 0.8525,
+    "temporal_distance": 11.4327,
+    "duration_gap": 31.5,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "MUSIC",
+    "predicted_gloss": "DAUGHTER",
+    "count": 2,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.5266,
+    "motion_distance": 0.5122,
+    "temporal_distance": 9.7424,
+    "duration_gap": 11.0,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "PLEASE",
+    "predicted_gloss": "ENJOY",
+    "count": 2,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.6168,
+    "motion_distance": 0.334,
+    "temporal_distance": 4.0202,
+    "duration_gap": 6.0,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "BOOK",
+    "predicted_gloss": "FAMILY",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.077,
+    "motion_distance": 0.3833,
+    "temporal_distance": 9.143,
+    "duration_gap": 17.25,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "DRINK",
+    "predicted_gloss": "COLLEGE",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.3654,
+    "motion_distance": 0.4892,
+    "temporal_distance": 9.695,
+    "duration_gap": 13.25,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "DRINK",
+    "predicted_gloss": "BANANA",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.8111,
+    "motion_distance": 0.8163,
+    "temporal_distance": 9.5122,
+    "duration_gap": 13.25,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "BEFORE",
+    "predicted_gloss": "HAIR",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 4.2648,
+    "motion_distance": 0.2882,
+    "temporal_distance": 7.8331,
+    "duration_gap": 0.25,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "BEFORE",
+    "predicted_gloss": "PAST",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.4054,
+    "motion_distance": 0.3074,
+    "temporal_distance": 5.0341,
+    "duration_gap": 5.25,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "CHAIR",
+    "predicted_gloss": "SALT",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 1.7491,
+    "motion_distance": 0.7178,
+    "temporal_distance": 9.0293,
+    "duration_gap": 15.5,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "GO",
+    "predicted_gloss": "BUT",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 1.7466,
+    "motion_distance": 0.3105,
+    "temporal_distance": 7.893,
+    "duration_gap": 7.0,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "CLOTHES",
+    "predicted_gloss": "WALK",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 1.4063,
+    "motion_distance": 0.3812,
+    "temporal_distance": 7.1584,
+    "duration_gap": 43.3333,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "WHO",
+    "predicted_gloss": "OLD",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 1.9007,
+    "motion_distance": 0.2247,
+    "temporal_distance": 3.8993,
+    "duration_gap": 0.6667,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "WHO",
+    "predicted_gloss": "GREEN",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 1.5916,
+    "motion_distance": 0.5805,
+    "temporal_distance": 6.6032,
+    "duration_gap": 12.1667,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "CANDY",
+    "predicted_gloss": "CUTE",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 1.6974,
+    "motion_distance": 0.2318,
+    "temporal_distance": 5.5173,
+    "duration_gap": 29.6667,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "CANDY",
+    "predicted_gloss": "HEAR",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 1.8236,
+    "motion_distance": 0.234,
+    "temporal_distance": 5.7983,
+    "duration_gap": 0.8333,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  },
+  {
+    "true_gloss": "COUSIN",
+    "predicted_gloss": "FUTURE",
+    "count": 1,
+    "category": "Temporal Confusion",
+    "shape_distance": 2.1473,
+    "motion_distance": 0.6997,
+    "temporal_distance": 8.556,
+    "duration_gap": 17.1667,
+    "suggested_fix": "Prioritize motion-aware training, longer sequence windows, and pose cues."
+  }
+]

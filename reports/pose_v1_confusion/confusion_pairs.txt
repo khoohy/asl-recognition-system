@@ -1,0 +1,12 @@
+Top confused sign pairs
+
+1. BEFORE -> ROOM: 2 times
+2. DOCTOR -> CENTER: 2 times
+3. BUT -> DIFFERENT: 2 times
+4. DIFFERENT -> BUT: 2 times
+5. BLANKET -> BALANCE: 2 times
+6. MUSIC -> DAUGHTER: 2 times
+7. PLEASE -> ENJOY: 2 times
+8. BOOK -> FAMILY: 1 times
+9. DRINK -> COLLEGE: 1 times
+10. DRINK -> BANANA: 1 times

@@ -1,18 +1,37 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Virtual env
+# Environments
+.env
+.venv/
 venv/
 
-# Large ML stuff (IGNORE THESE)
-data/
-models/
-checkpoints/
-
-# Logs & outputs
+# Logs
 logs/
-reports/
+*.log
+
+# Datasets and large raw assets
+data/raw/
+data/processed/
+*.zip
+*.tar
+*.tar.gz
+*.gz
+*.7z
+*.rar
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Training artifacts and checkpoint dumps
+checkpoints/
+*_epoch_*.pt
+*_epoch_*.pth
 
 # System
 .DS_Store
+Thumbs.db

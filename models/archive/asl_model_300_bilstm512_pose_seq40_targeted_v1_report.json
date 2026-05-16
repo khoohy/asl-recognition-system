@@ -1,0 +1,58 @@
+{
+  "best_checkpoint": "models/asl_model_300_bilstm512_pose_seq40_targeted_v1.pt",
+  "dataset": {
+    "source": "mp-cache",
+    "metadata": "data/raw/wlasl_v0.3.json",
+    "label_map": "data/raw/label_map_300.json",
+    "train_samples": 3549,
+    "val_samples": 900,
+    "test_samples": 668,
+    "mp_root": "data/raw/data/mp"
+  },
+  "model": {
+    "input_dim": 147,
+    "hidden_dim": 512,
+    "dropout": 0.5,
+    "num_heads": 1,
+    "sequence_length": 40,
+    "num_classes": 300,
+    "use_pose": true
+  },
+  "training": {
+    "epochs_requested": 30,
+    "epochs_completed": 30,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "warmup_epochs": 3,
+    "scheduler": "plateau",
+    "augment": true,
+    "class_balanced": true,
+    "weighted_loss": false,
+    "focal_gamma": 0.0,
+    "boost_glosses": [
+      "mother",
+      "father",
+      "tall",
+      "theory"
+    ],
+    "boost_factor": 2.5,
+    "seed": 42,
+    "device": "cuda"
+  },
+  "best_validation": {
+    "epoch": 30,
+    "train_loss": 1.3352060199857831,
+    "train_top1": 92.92482137680054,
+    "train_top5": 96.7313218224156,
+    "val_loss": 2.162915727187847,
+    "val_top1": 68.10344827586206,
+    "val_top5": 88.46982758620689,
+    "lr": 0.0005
+  },
+  "test_metrics": {
+    "loss": 2.3309154964628673,
+    "top1": 61.81972793170384,
+    "top5": 85.79931997117542
+  },
+  "history_file": "models\\asl_model_300_bilstm512_pose_seq40_targeted_v1_history.json"
+}

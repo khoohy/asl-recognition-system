@@ -1,0 +1,26 @@
+Weakest classes on the WLASL300 held-out test split
+
+These classes have the lowest recall among classes with enough support to matter.
+Low recall means the model often misses the sign even when it appears in the test set.
+
+1. BEFORE | support=4 | precision=0.000 | recall=0.000 | f1=0.000 | Most often predicted as ROOM (2/4 mistakes).
+2. THIN | support=3 | precision=0.000 | recall=0.000 | f1=0.000 | Most often predicted as SOON (1/3 mistakes).
+3. BACKPACK | support=3 | precision=0.000 | recall=0.000 | f1=0.000 | Most often predicted as DOOR (1/3 mistakes).
+4. CHECK | support=3 | precision=0.000 | recall=0.000 | f1=0.000 | Most often predicted as JUMP (1/3 mistakes).
+5. FAR | support=3 | precision=0.000 | recall=0.000 | f1=0.000 | Most often predicted as BEHIND (1/3 mistakes).
+6. BUT | support=3 | precision=0.200 | recall=0.333 | f1=0.250 | Most often predicted as DIFFERENT (2/3 mistakes).
+7. WALK | support=3 | precision=0.250 | recall=0.333 | f1=0.286 | Most often predicted as LIGHT (1/3 mistakes).
+8. COOL | support=3 | precision=0.250 | recall=0.333 | f1=0.286 | Most often predicted as YOUR (1/3 mistakes).
+9. CANDY | support=3 | precision=0.333 | recall=0.333 | f1=0.333 | Most often predicted as CUTE (1/3 mistakes).
+10. WHO | support=3 | precision=0.500 | recall=0.333 | f1=0.400 | Most often predicted as OLD (1/3 mistakes).
+11. FINE | support=3 | precision=0.500 | recall=0.333 | f1=0.400 | Most often predicted as DAUGHTER (1/3 mistakes).
+12. TAKE | support=3 | precision=0.500 | recall=0.333 | f1=0.400 | Most often predicted as CATCH (1/3 mistakes).
+13. LIKE | support=3 | precision=1.000 | recall=0.333 | f1=0.500 | Most often predicted as INTEREST (1/3 mistakes).
+14. MOTHER | support=3 | precision=1.000 | recall=0.333 | f1=0.500 | Most often predicted as FATHER (1/3 mistakes).
+15. CORN | support=3 | precision=1.000 | recall=0.333 | f1=0.500 | Most often predicted as HOPE (1/3 mistakes).
+
+Actionable interpretation:
+- If weak classes are confused with motion-similar signs, test pose features first.
+- If weak classes have low support and low recall, keep balanced sampling and consider stronger augmentation.
+- If weak classes show many one-hand dropouts, inspect the MediaPipe cache quality for those classes.
+- If the same predicted sign absorbs many other classes, inspect whether that target class has cleaner or more abundant training data.
