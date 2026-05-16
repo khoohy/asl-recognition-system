@@ -10,7 +10,7 @@ This repository combines:
 - preprocessing shared between offline training and live deployment
 - optional text-to-speech output for predicted signs
 
-Demo video: 
+Demo video:  
 https://github.com/user-attachments/assets/9807f81d-f893-447c-b9a1-706aef9c525b
 
 ## Overview
@@ -81,41 +81,74 @@ The newer training path can extend the input beyond hands:
 
 This makes the model more useful for signs where hand shape alone is not enough.
 
+## Current Refactor Status
+
+- The working webcam inference path is preserved and still runs through `src/main.py`
+- Production model artifacts are separated under `models/production/`
+- Older checkpoints and experiment outputs are archived under `models/archive/`
+- `backend/` and `frontend/` are placeholders for future FastAPI and React expansion, not implemented services yet
+
+Compatibility wrappers intentionally still exist in:
+
+- `src/modules/`
+- `src/utils/preprocessing.py`
+- `scripts/inference_bridge.py`
+
+These wrappers keep legacy imports working while the implementation lives in the refactored structure.
+
 ## Repository Structure
 
 ```text
 .
+|-- backend/
+|-- frontend/
+|-- docs/
+|-- models/
+|   |-- archive/
+|   |-- production/
+|   `-- bilstm_final.pt
+|-- reports/
+|-- scripts/
+|   |-- data/
+|   |   |-- create_sample_dataset.py
+|   |   |-- download_dataset.py
+|   |   |-- download_from_kaggle.py
+|   |   |-- extract_keypoints.py
+|   |   `-- prepare_data.py
+|   |-- training/
+|   |   |-- train_model.py
+|   |   `-- train_model_300.py
+|   |-- evaluation/
+|   |   |-- analyze_confusion.py
+|   |   |-- inference_bridge.py
+|   |   |-- test_mediapipe_hands.py
+|   |   |-- test_pipeline.py
+|   |   |-- test_trained_model.py
+|   |   `-- verify_preprocessing_parity.py
+|   |-- experiments/
+|   |   `-- run_experiment_matrix.py
+|   |-- inference_bridge.py          # compatibility wrapper
+|   `-- __init__.py
 |-- src/
-|   |-- main.py                         # Real-time application entry point
-|   |-- modules/
+|   |-- audio/
+|   |   `-- text_to_speech.py
+|   |-- inference/
+|   |   `-- sequence_model.py
+|   |-- preprocessing/
 |   |   |-- keypoint_extraction.py
-|   |   |-- sequence_model.py
-|   |   |-- text_to_speech.py
+|   |   `-- preprocessing.py
+|   |-- utils/
+|   |   |-- config.py
+|   |   `-- preprocessing.py         # compatibility wrapper
+|   |-- video/
 |   |   |-- ui.py
 |   |   `-- video_capture.py
-|   `-- utils/
-|       |-- config.py
-|       `-- preprocessing.py
-|-- scripts/
-|   |-- prepare_data.py                # Label maps and shared preprocessing helpers
-|   |-- train_model_300.py             # Main WLASL300 training script
-|   |-- run_experiment_matrix.py       # Repeatable experiment launcher
-|   |-- test_pipeline.py
-|   |-- test_trained_model.py
-|   |-- analyze_confusion.py
-|   |-- download_dataset.py
-|   `-- download_from_kaggle.py
-|-- docs/
-|   |-- SETUP.md
-|   |-- API.md
-|   |-- DEV.md
-|   |-- FULL_SYSTEM_TECHNICAL_ANATOMY.md
-|   `-- PROJECT_CHANGELOG_AND_COMPONENTS.md
+|   |-- modules/                     # compatibility wrappers
+|   `-- main.py
+|-- tests/
 |-- data/
-|-- models/
-|-- checkpoints/
-|-- reports/
-`-- requirements.txt
+|-- requirements.txt
+`-- README.md
 ```
 
 ## Requirements
@@ -188,13 +221,19 @@ pip install -r requirements.txt
 ### Run the real-time app
 
 ```bash
-python src/main.py --model models/asl_model_300_pose_face_balaug_hardened_v1.pt --use-wlasl300
+python src/main.py --use-wlasl300
 ```
 
 Controls:
 
 - `q` to quit
 - `s` to toggle landmark rendering
+
+### Active production model
+
+The default realtime WLASL300 path loads:
+
+- `models/production/asl_wlasl300_realtime.pt`
 
 ### Run without loading a model
 
@@ -213,7 +252,7 @@ The project supports a few different data sources depending on how you want to t
 If you already have the WLASL metadata JSON:
 
 ```bash
-python scripts/prepare_data.py --metadata data/raw/wlasl_v0.3.json
+python scripts/data/prepare_data.py --metadata data/raw/wlasl_v0.3.json
 ```
 
 This generates:
@@ -227,13 +266,13 @@ This generates:
 For quick testing and exploration:
 
 ```bash
-python scripts/download_dataset.py 10
+python scripts/data/download_dataset.py 10
 ```
 
 ### Option 3: Download processed data from Kaggle
 
 ```bash
-python scripts/download_from_kaggle.py
+python scripts/data/download_from_kaggle.py
 ```
 
 The Kaggle helper expects the Kaggle CLI and a valid `kaggle.json` credential file in your user profile.
@@ -249,12 +288,12 @@ The main WLASL300 training script defaults to:
 
 ## Training
 
-The main training entry point is [`scripts/train_model_300.py`](scripts/train_model_300.py).
+The main training entry point is [`scripts/training/train_model_300.py`](scripts/training/train_model_300.py).
 
 ### Train from MediaPipe cache
 
 ```powershell
-python scripts/train_model_300.py `
+python scripts/training/train_model_300.py `
   --source mp-cache `
   --metadata data/raw/wlasl_v0.3.json `
   --label-map data/raw/label_map_300.json `
@@ -272,19 +311,19 @@ python scripts/train_model_300.py `
 PowerShell single-line version:
 
 ```bash
-python scripts/train_model_300.py --source mp-cache --metadata data/raw/wlasl_v0.3.json --label-map data/raw/label_map_300.json --mp-root data/raw/data/mp --device cuda --epochs 50 --batch-size 32 --class-balanced --augment --use-pose --use-face --output-prefix models/asl_model_300_pose_face_balaug_v1
+python scripts/training/train_model_300.py --source mp-cache --metadata data/raw/wlasl_v0.3.json --label-map data/raw/label_map_300.json --mp-root data/raw/data/mp --device cuda --epochs 50 --batch-size 32 --class-balanced --augment --use-pose --use-face --output-prefix models/asl_model_300_pose_face_balaug_v1
 ```
 
 ### Train from Kaggle 126-dim features
 
 ```bash
-python scripts/train_model_300.py --source kaggle-126 --kaggle-root data/raw/kaggle/wlasl-126keypoints-2000/wlasl_keypoints_126 --device cuda --epochs 50 --batch-size 32
+python scripts/training/train_model_300.py --source kaggle-126 --kaggle-root data/raw/kaggle/wlasl-126keypoints-2000/wlasl_keypoints_126 --device cuda --epochs 50 --batch-size 32
 ```
 
 ### Train from JSON landmark sequences
 
 ```bash
-python scripts/train_model_300.py --source json --landmarks-file data/raw/wlasl2000_landmarks.json --device cuda
+python scripts/training/train_model_300.py --source json --landmarks-file data/raw/wlasl2000_landmarks.json --device cuda
 ```
 
 ### Common training options
@@ -304,19 +343,25 @@ python scripts/train_model_300.py --source json --landmarks-file data/raw/wlasl2
 ### Evaluate a trained checkpoint
 
 ```bash
-python scripts/train_model_300.py --source mp-cache --eval-only --checkpoint models/asl_model_300.pt --device cuda
+python scripts/training/train_model_300.py --source mp-cache --eval-only --checkpoint models/production/asl_wlasl300_realtime.pt --device cuda
 ```
 
 ### Run a lightweight sample-video validation
 
 ```bash
-python scripts/test_trained_model.py --model models/bilstm_final.pt --samples 5
+python scripts/evaluation/test_trained_model.py --model models/bilstm_final.pt --samples 5
 ```
 
 ### Pipeline smoke test
 
 ```bash
-python scripts/test_pipeline.py
+python scripts/evaluation/test_pipeline.py
+```
+
+### Confusion analysis
+
+```bash
+python scripts/evaluation/analyze_confusion.py --checkpoint models/production/asl_wlasl300_realtime.pt
 ```
 
 ## Realtime Inference
@@ -326,7 +371,7 @@ The real-time app is implemented in [`src/main.py`](src/main.py) through `ASLRec
 ### Standard usage
 
 ```bash
-python src/main.py --model models/asl_model_300_pose_face_balaug_hardened_v1.pt --use-wlasl300
+python src/main.py --use-wlasl300
 ```
 
 ### What the live system does
@@ -350,18 +395,20 @@ python src/main.py --model models/asl_model_300_pose_face_balaug_hardened_v1.pt 
 
 Most of these thresholds live in [`src/utils/config.py`](src/utils/config.py).
 
+The active WLASL300 realtime bridge implementation lives in [`scripts/evaluation/inference_bridge.py`](scripts/evaluation/inference_bridge.py), while [`scripts/inference_bridge.py`](scripts/inference_bridge.py) remains as a compatibility wrapper.
+
 ## Experiments
 
 You can launch predefined experiments with:
 
 ```bash
-python scripts/run_experiment_matrix.py --matrix top1_push --device cuda
+python scripts/experiments/run_experiment_matrix.py --matrix top1_push --device cuda
 ```
 
 Dry run:
 
 ```bash
-python scripts/run_experiment_matrix.py --matrix top1_push --dry-run
+python scripts/experiments/run_experiment_matrix.py --matrix top1_push --dry-run
 ```
 
 The current matrix includes variants such as:
@@ -399,12 +446,14 @@ Notable defaults:
 
 Training and experimentation produce artifacts in a few places:
 
-- `models/`: best checkpoints and named model variants
-- `checkpoints/`: periodic checkpoint snapshots
-- `reports/`: experiment outputs if used by your workflow
+- `models/production/`: active promoted model artifacts
+- `models/archive/`: archived experiment checkpoints and reports
+- `reports/`: evaluation outputs and analysis artifacts
 - `logs/`: runtime log output
 
-`train_model_300.py` also writes:
+Periodic checkpoint dumps may still be produced during training workflows, but they are not part of the main active tracked structure described by this README.
+
+`scripts/training/train_model_300.py` also writes:
 
 - `<output-prefix>.pt`
 - `<output-prefix>_best.pt`
@@ -418,12 +467,14 @@ Additional project documentation is already included:
 - [`docs/SETUP.md`](docs/SETUP.md): installation and environment notes
 - [`docs/API.md`](docs/API.md): API-level documentation
 - [`docs/DEV.md`](docs/DEV.md): development notes
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): current refactored architecture overview
+- [`docs/REFACTOR_LOG.md`](docs/REFACTOR_LOG.md): phase-by-phase refactor summary
 - [`docs/FULL_SYSTEM_TECHNICAL_ANATOMY.md`](docs/FULL_SYSTEM_TECHNICAL_ANATOMY.md): deeper technical breakdown
 - [`docs/PROJECT_CHANGELOG_AND_COMPONENTS.md`](docs/PROJECT_CHANGELOG_AND_COMPONENTS.md): component history and changes
 
 ## Performance Notes
 
-The repository’s earlier project notes report approximate results in this range:
+The repository's earlier project notes report approximate results in this range:
 
 - validation Top-1: about `67%`
 - validation Top-5: about `89%`
@@ -478,4 +529,3 @@ Actual results depend on:
 - real-world accuracy depends heavily on signer variability and camera conditions
 - deployment quality depends on keeping training and inference feature formats aligned
 - some helper scripts reflect older experimental paths and may need adaptation for your local data layout
-
